@@ -1,0 +1,11 @@
+numpy
+pandas
+yfinance
+ta
+gymnasium
+stable-baselines3
+PyPortfolioOpt
+scipy
+matplotlib
+streamlit
+quantstats
