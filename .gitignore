@@ -218,3 +218,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Eğitim çıktıları
+models/seed_*/
+models/training_summary.json
+data/results/*_backtest_summary.json
+
+
+data/dummy_signal/
+models_signal/
+results_signal/
