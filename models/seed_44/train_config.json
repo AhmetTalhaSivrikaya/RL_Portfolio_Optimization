@@ -1,0 +1,20 @@
+{
+  "seed": 44,
+  "env_params": {
+    "window_size": 10,
+    "commission_rate": 0.001,
+    "action_scale": 1.2,
+    "cash_daily_return": 0.0,
+    "turnover_penalty": 0.25,
+    "rebalance_threshold": 0.1,
+    "rebalance_freq": 5
+  },
+  "episode_length": 250,
+  "timesteps": 200000,
+  "learning_rate": 0.0003,
+  "ent_coef": 0.005,
+  "log_std_init": -0.5,
+  "gamma": 0.99,
+  "batch_size": 64,
+  "n_epochs": 10
+}

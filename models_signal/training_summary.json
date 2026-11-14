@@ -1,0 +1,51 @@
+{
+  "best_seed": 42,
+  "buy_and_hold_val_reference": {
+    "final_value": 102342.75667837831,
+    "total_return_pct": 2.3427566783783105,
+    "sharpe": 0.2300095766102992,
+    "max_drawdown_pct": -11.595585239810525,
+    "avg_turnover": 0.0,
+    "steps": 249
+  },
+  "seeds": [
+    {
+      "seed": 42,
+      "best_step": 50000,
+      "val_final_value": 112011.3436322458,
+      "val_total_return_pct": 12.011343632245808,
+      "val_sharpe": 0.6271028288958134,
+      "val_max_drawdown_pct": -16.21300601818847,
+      "val_avg_turnover": 1.4713249557089456,
+      "val_steps": 249
+    },
+    {
+      "seed": 43,
+      "best_step": 30000,
+      "val_final_value": 86305.70542572877,
+      "val_total_return_pct": -13.694294574271238,
+      "val_sharpe": -0.5595058619736292,
+      "val_max_drawdown_pct": -17.137338907941956,
+      "val_avg_turnover": 1.2023610924374257,
+      "val_steps": 249
+    },
+    {
+      "seed": 44,
+      "best_step": 60000,
+      "val_final_value": 78654.23186774751,
+      "val_total_return_pct": -21.345768132252484,
+      "val_sharpe": -0.8104549196719364,
+      "val_max_drawdown_pct": -23.958827135408566,
+      "val_avg_turnover": 1.3232174496610893,
+      "val_steps": 249
+    }
+  ],
+  "env_params": {
+    "window_size": 10,
+    "commission_rate": 0.001,
+    "action_scale": 5.0,
+    "cash_daily_return": 0.0,
+    "turnover_penalty": 0.01,
+    "rebalance_threshold": 0.05
+  }
+}

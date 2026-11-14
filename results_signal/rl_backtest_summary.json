@@ -1,0 +1,33 @@
+{
+  "split": "test",
+  "seed": 42,
+  "checkpoint": "best",
+  "method": "rl",
+  "first_date": "2024-01-16",
+  "last_date": "2025-12-31",
+  "metrics": {
+    "final_value": 51931.52191284399,
+    "total_return_pct": -48.06847808715601,
+    "sharpe": -1.3622900769323658,
+    "max_drawdown_pct": -58.08445695699535,
+    "avg_turnover": 1.4651858769541684,
+    "steps": 512,
+    "total_commission": 66684.0018
+  },
+  "buy_and_hold_reference": {
+    "final_value": 107306.16233335367,
+    "total_return_pct": 7.306162333353661,
+    "sharpe": 0.3139605729267826,
+    "max_drawdown_pct": -25.74897402231684,
+    "avg_turnover": 0.0,
+    "steps": 512
+  },
+  "env_params": {
+    "window_size": 10,
+    "commission_rate": 0.001,
+    "action_scale": 5.0,
+    "cash_daily_return": 0.0,
+    "turnover_penalty": 0.01,
+    "rebalance_threshold": 0.05
+  }
+}
