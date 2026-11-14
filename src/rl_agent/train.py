@@ -198,6 +198,7 @@ def main():
     ap.add_argument("--cash-daily-return", type=float, default=0.0)
     ap.add_argument("--turnover-penalty", type=float, default=0.01)
     ap.add_argument("--rebalance-threshold", type=float, default=0.05)
+    ap.add_argument("--rebalance-freq", type=int, default=5, help="Kaç işlem gününde bir rebalance yapılacak (5: haftalık)")
     args = ap.parse_args()
 
     os.makedirs(args.model_dir, exist_ok=True)
@@ -213,6 +214,7 @@ def main():
         "cash_daily_return": args.cash_daily_return,
         "turnover_penalty": args.turnover_penalty,
         "rebalance_threshold": args.rebalance_threshold,
+        "rebalance_freq": args.rebalance_freq,
     }
 
     bh = buy_and_hold_reference(val_data[0], args.window_size, args.commission)
