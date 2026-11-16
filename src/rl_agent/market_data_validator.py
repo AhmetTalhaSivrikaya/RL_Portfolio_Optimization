@@ -20,7 +20,8 @@ SPLITS = ("train", "val", "test")
 GLOBAL_FEATURE_PREFIX = "MKT_"  # Piyasa geneli özellikler için (örn. MKT_xu100_ret_1d)
 FEATURE_ERROR_ABS = 50.0  # Üstü: büyük olasılıkla ölçeklenmemiş ham değer -> HATA
 FEATURE_WARN_ABS = 10.0  # Üstü: UYARI
-
+INITIAL_BALANCE = 100_000.0
+COMMISSION_RATE = 0.001
 
 class DataContractError(ValueError):
     """Veri sözleşmesi ihlali. (assert yerine kullanılır: python -O ile de çalışır.)"""
@@ -149,7 +150,12 @@ def validate_split_continuity(splits: dict):
 # ----------------------------------------------------------------------------------
 # 2) Çıktı: backtest sonuç dosyaları (RL, Markowitz, Buy&Hold ...)
 # ----------------------------------------------------------------------------------
-def validate_results_file(path: str, initial_balance: float = INITIAL_BALANCE, tol: float = 1e-4):
+def validate_results_file(
+    path: str,
+    initial_balance: float = INITIAL_BALANCE,
+    tol: float = 1e-5,
+    commission_rate: float = COMMISSION_RATE,
+):
     df = pd.read_csv(path, parse_dates=["Date"])
     required = ["Date", "Portfolio_Value", "Daily_Return", "W_CASH"]
     missing = [c for c in required if c not in df.columns]
@@ -168,18 +174,35 @@ def validate_results_file(path: str, initial_balance: float = INITIAL_BALANCE, t
 
     # Net getiri tutarlılığı: Daily_Return == PV_t / PV_{t-1} - 1  (komisyon dahil)
     pv = df["Portfolio_Value"].values
-    implied = np.empty_like(pv)
-    implied[0] = pv[0] / initial_balance - 1.0
-    implied[1:] = pv[1:] / pv[:-1] - 1.0
+    pv_prev = np.concatenate([[initial_balance], pv[:-1]])
+    implied = pv / pv_prev - 1.0
     err = np.abs(implied - df["Daily_Return"].values).max()
     if err > tol:
         _fail(
             f"{path}: Daily_Return, Portfolio_Value ile tutarsız (maks. fark {err:.2e}). "
             "Daily_Return komisyon DAHİL net getiri olmalı."
         )
+
+    # Komisyon tutarlılığı (Turnover ve Commission sütunları varsa): Commission = PV_{t-1} * Turnover * oran
+    if {"Turnover", "Commission"}.issubset(df.columns):
+        expected = pv_prev * df["Turnover"].values * commission_rate
+        diff = np.abs(expected - df["Commission"].values)
+        if (diff > np.maximum(0.01, 1e-4 * expected)).any():
+            _fail(
+                f"{path}: Commission, PV_önceki * Turnover * {commission_rate:g} ile tutarsız "
+                f"(maks. fark {diff.max():.4f} TL)."
+            )
+        # Turnover tanımı: ilk gün nakitten başlanır, bu yüzden turnover ≈ ilk günkü toplam hisse ağırlığı olmalı
+        # (nakit bacağı komisyonsuzdur; alış+satış hacmi toplanır). Fiyat kayması için küçük tolerans bırakılır.
+        first_stock_weight = 1.0 - float(df["W_CASH"].iloc[0])
+        if abs(float(df["Turnover"].iloc[0]) - first_stock_weight) > 0.05:
+            _fail(
+                f"{path}: Turnover tanımı sözleşmeye uymuyor: ilk gün turnover {df['Turnover'].iloc[0]:.3f}, "
+                f"beklenen ≈ {first_stock_weight:.3f} (Σ|Δw| yalnızca hisse bacakları)."
+            )
+
     print(f"✅ Sonuç dosyası doğrulandı: {os.path.basename(path)} ({len(df)} satır).")
     return df
-
 
 # ----------------------------------------------------------------------------------
 # Komut satırı: data/processed ve data/results altındaki her şeyi denetle

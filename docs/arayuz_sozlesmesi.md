@@ -26,8 +26,9 @@ flowchart LR
 | Sabit | Değer | Not |
 |---|---|---|
 | Başlangıç sermayesi | `100_000` | Tüm yöntemlerde aynı |
-| Komisyon | `%0.1` (`0.001`) | İşlem hacmi üzerinden, alım ve satımda ayrı ayrı |
-| Pozisyon tipi | Yalnızca long, kaldıraçsız | Ağırlıklar ≥ 0 ve toplamı 1 (nakit dahil) |
+| Komisyon | `%0.1` (`0.001`) | `komisyon = portföy_değeri × turnover × 0.001`. Her alım ve her satım ayrı ücretlendirilir |
+| Turnover tanımı | `Σ\|Δw\|` (yalnızca **hisse** bacakları) | İşlem hacmi / portföy değeri. Nakit bacağı **komisyonsuzdur**. Nakit→hisse %100 = `1.0`, hisse A→B tam rotasyon (sat+al) = `2.0` |
+| Rebalance sıklığı | RL: `5` iş günü (haftalık) | Baseline'lar günlük / haftalık / hiç değişken olabilir; adil kıyas için `markowitz_weekly` aynı takvimi kullanır || Pozisyon tipi | Yalnızca long, kaldıraçsız | Ağırlıklar ≥ 0 ve toplamı 1 (nakit dahil) |
 | Nakit getirisi | `0` **[ONAY]** | TL için faiz kullanılacaksa **tüm yöntemlerde** aynı değer verilmeli |
 | Gözlem penceresi (`WINDOW_SIZE`) | `10` iş günü | RL ortamı için, bkz. §4 |
 | Hisse evreni | `THYAO.IS, GARAN.IS, ASELS.IS, KCHOL.IS, BIMAS.IS` **[ONAY]** | Sayı değişebilir (en az 2); kod hisse sayısına bağımlı değil |
@@ -87,7 +88,8 @@ Her yöntem **aynı şemada** bir dosya üretir: `data/results/<yöntem>_backtes
 | `Daily_Return` | ✅ | **Net** getiri = `Portfolio_Value[t] / Portfolio_Value[t-1] - 1`. İlk satırda önceki değer `100_000` |
 | `W_<HISSE>` | ✅ | Gün sonu ağırlıkları (fiyat kayması sonrası), ≥ 0 |
 | `W_CASH` | ✅ | Nakit ağırlığı. Her satırda `W_*` toplamı = 1 |
-| `Turnover`, `Commission` | ❌ | Opsiyonel (RL üretir) |
+| `Turnover` | ❌ | Yukarıdaki tanımla işlem hacmi / portföy değeri (RL ve baseline'lar üretir) |
+| `Commission` | ❌ | `PV_önceki × Turnover × 0.001` (TL). İki sütun birlikte varsa doğrulayıcı tutarlılığı denetler |
 
 - **Sharpe, drawdown vb. yalnızca `Daily_Return` / `Portfolio_Value`'dan hesaplanır.** Bu iki sütunun tutarlılığı
   doğrulayıcı tarafından denetlenir (komisyonun getiriden gizlenmesi hata sayılır).

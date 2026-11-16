@@ -224,7 +224,9 @@ models/seed_*/
 models/training_summary.json
 data/results/*_backtest_summary.json
 
-
-data/dummy_signal/
+# Eğitim çıktıları ve geçici dosyalar (Git'e eklenmez)
+models/
 models_signal/
 results_signal/
+data/dummy_signal/
+data/results/*_backtest_summary.json

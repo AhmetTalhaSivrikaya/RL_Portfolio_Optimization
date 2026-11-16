@@ -73,23 +73,25 @@ def test_observation_shape(env):
 
 
 def test_turnover_calculation(env):
-    """Tam portföy değişiminde turnover %100 olmalı."""
+    """Turnover = hisse bacaklarının işlem hacmi (alış + satış). Nakit bacağı komisyonsuzdur."""
 
-    old_weights = np.array(
-        [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # Hisse A'dan B'ye tam rotasyon: %100 sat + %100 al = 2.0
+    rotation = env._calculate_turnover(
+        np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0, 0.0, 0.0, 0.0]),
     )
+    assert np.isclose(rotation, 2.0)
 
-    new_weights = np.array(
-        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+    # %100 nakitten %100 hisseye geçiş: yalnızca alış bacağı = 1.0
+    cash_to_stock = env._calculate_turnover(
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+        np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     )
+    assert np.isclose(cash_to_stock, 1.0)
 
-    turnover = env._calculate_turnover(
-        old_weights,
-        new_weights
-    )
-
-    assert np.isclose(turnover, 1.0)
-
+    # Değişiklik yoksa turnover 0
+    same = np.array([0.2, 0.2, 0.2, 0.2, 0.1, 0.1])
+    assert np.isclose(env._calculate_turnover(same, same), 0.0)
 
 def test_no_trade_commission(env):
     """İşlem yapılmadığında komisyon sıfır olmalı."""
@@ -188,7 +190,6 @@ def deterministic_env():
         commission_rate=0.001,
         window_size=2,
         rebalance_threshold=0.0,
-        risk_aversion=0.0,
         turnover_penalty=0.0,
         drawdown_penalty_coef=0.0
     )

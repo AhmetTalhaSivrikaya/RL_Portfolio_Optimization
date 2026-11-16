@@ -9,6 +9,19 @@ import pandas as pd
 class PortfolioEnv(gym.Env):
     """
     Dinamik Portföy Optimizasyonu için Gymnasium ortamı.
+
+    Eylem  : N hisse + 1 nakit için ham skorlar -> softmax(skor * action_scale) -> hedef ağırlıklar (toplam = 1).
+    Gözlem : Son `window_size` günün özellikleri (düzleştirilmiş) + mevcut portföy ağırlıkları.
+    Ödül   : 100 * log(1 + NET getiri) - drawdown cezası - turnover cezası.
+
+    Önemli tanımlar (docs/ARAYUZ_SOZLESMESI.md ile aynı olmalı):
+      * turnover = işlem hacmi / portföy değeri = Σ|Δw| (yalnızca HİSSE bacakları; alış + satış dahil, nakit bacağı hariç).
+        Nakitten hisseye %100 geçiş = 1.0, hisse A'dan B'ye tam rotasyon (sat + al) = 2.0.
+      * komisyon = portföy_değeri * turnover * commission_rate  (her alım ve her satım ayrı ücretlendirilir).
+      * step_return NET getiridir (komisyon dahil): Portfolio_Value[t] / Portfolio_Value[t-1] - 1.
+      * rebalance_freq = N: yalnızca her N. adımda hedef ağırlığa geçilir (1: her gün). Ara günlerde ağırlıklar
+        fiyatlarla kayar ve komisyon ödenmez. Varsayılan 1'dir; train.py CLI varsayılanı 5'tir (haftalık).
+      * Veri/bölüm sonu `truncated`, iflas (<%20 sermaye) `terminated` sayılır.
     """
 
     metadata = {"render_modes": ["human"]}
@@ -25,7 +38,6 @@ class PortfolioEnv(gym.Env):
         rebalance_threshold: float = 0.05,
         rebalance_freq: int = 1,
         turnover_penalty: float = 0.01,
-        risk_aversion: float = 0.1,
         action_scale: float = 5.0,
         cash_daily_return: float = 0.0,
         random_start: bool = False,
@@ -57,7 +69,6 @@ class PortfolioEnv(gym.Env):
         self.rebalance_freq = max(1, int(rebalance_freq))
         self.turnover_penalty = float(turnover_penalty)
 
-        self.risk_aversion = float(risk_aversion)
         self.action_scale = float(action_scale)
 
         self.cash_daily_return = float(cash_daily_return)
@@ -100,7 +111,10 @@ class PortfolioEnv(gym.Env):
         return e_x / e_x.sum()
 
     def _calculate_turnover(self, old_weights: np.ndarray, new_weights: np.ndarray) -> float:
-        return float(0.5 * np.sum(np.abs(new_weights - old_weights)))
+        """İşlem hacmi / portföy değeri. Son eleman nakittir ve komisyonsuzdur; yalnızca hisse bacakları sayılır."""
+        old_w = np.asarray(old_weights, dtype=np.float64)
+        new_w = np.asarray(new_weights, dtype=np.float64)
+        return float(np.sum(np.abs(new_w[:-1] - old_w[:-1])))
 
     def _calculate_reward(self, step_return: float, drawdown: float, turnover: float) -> float:
         if step_return <= -1.0:
