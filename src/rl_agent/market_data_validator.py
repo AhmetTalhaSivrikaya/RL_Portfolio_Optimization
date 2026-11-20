@@ -95,7 +95,7 @@ def load_and_validate_data(prices_path: str, features_path: str, min_assets: int
     for col in features_df.columns:
         if col.startswith(GLOBAL_FEATURE_PREFIX):
             continue
-        prefix = col.split("_", 1)[0]
+        prefix = _base_name(col.split("_", 1)[0])
         if prefix not in known:
             _fail(
                 f"Özellik sütunu '{col}' hiçbir hisseyle eşleşmiyor. "
@@ -157,8 +157,17 @@ def validate_results_file(path: str, initial_balance: float = INITIAL_BALANCE, t
         _fail(f"{path}: zorunlu sütunlar eksik: {missing}")
     if (not df["Date"].is_monotonic_increasing) or df["Date"].duplicated().any():
         _fail(f"{path}: Date sütunu artan ve tekrarsız olmalı.")
-    if df[required[1:]].isna().any().any():
-        _fail(f"{path}: NaN değer var.")
+
+    numeric_cols = [c for c in df.columns if c != "Date"]
+    if df[numeric_cols].isna().any().any() or not np.isfinite(df[numeric_cols].to_numpy(dtype=float)).all():
+        _fail(f"{path}: Sonuç sütunlarında NaN veya sonsuz (Inf) değer var.")
+    if (df["Portfolio_Value"].values <= 0).any():
+        _fail(f"{path}: Portfolio_Value pozitif olmalı.")
+
+    if "Turnover" in df.columns and (df["Turnover"].values < -1e-9).any():
+        _fail(f"{path}: Negatif Turnover değeri tespit edildi.")
+    if "Commission" in df.columns and (df["Commission"].values < -1e-9).any():
+        _fail(f"{path}: Negatif Commission değeri tespit edildi.")
 
     w_cols = [c for c in df.columns if c.startswith("W_")]
     if np.abs(df[w_cols].sum(axis=1) - 1.0).max() > 1e-3:
@@ -179,7 +188,6 @@ def validate_results_file(path: str, initial_balance: float = INITIAL_BALANCE, t
         )
     print(f"✅ Sonuç dosyası doğrulandı: {os.path.basename(path)} ({len(df)} satır).")
     return df
-
 
 # ----------------------------------------------------------------------------------
 # Komut satırı: data/processed ve data/results altındaki her şeyi denetle

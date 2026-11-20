@@ -89,20 +89,22 @@ def _backtest(
     # RL starts trading after observing its initial rolling window.
     for i in range(window_size, len(test_prices) - 1):
         desired = targets if (rebalance_daily or i == window_size) else holdings
-        turnover = float(np.abs(desired - holdings).sum())
+        turnover = float(0.5 * np.abs(desired - holdings).sum())
+        previous_value = values
         values *= 1.0 - commission_rate * turnover
 
         daily_asset_returns = price_values[i + 1] / price_values[i] - 1.0
         all_returns = np.append(daily_asset_returns, 0.0)
-        daily_return = float(desired @ all_returns)
-        values *= 1.0 + daily_return
+        gross_return = float(desired @ all_returns)
+        values *= 1.0 + gross_return
+        net_daily_return = values / previous_value - 1.0
 
         after_return_values = desired * (1.0 + all_returns)
         holdings = after_return_values / after_return_values.sum()
         row: dict[str, float | str] = {
             "Date": dates[i + 1].strftime("%Y-%m-%d"),
             "Portfolio_Value": round(values, 2),
-            "Daily_Return": round(daily_return, 6),
+            "Daily_Return": round(net_daily_return, 6),
         }
         for asset, weight in zip(test_prices.columns, holdings[:-1]):
             row[f"W_{asset}"] = round(float(weight), 4)

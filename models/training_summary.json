@@ -1,52 +1,52 @@
 {
-  "best_seed": 43,
+  "best_seed": 44,
   "buy_and_hold_val_reference": {
-    "final_value": 103500.54464805282,
-    "total_return_pct": 3.500544648052828,
-    "sharpe": 0.30721069865395606,
-    "max_drawdown_pct": -13.553566228139523,
+    "final_value": 156335.39008441885,
+    "total_return_pct": 56.335390084418854,
+    "sharpe": 1.5674234129244289,
+    "max_drawdown_pct": -19.037318560887417,
     "avg_turnover": 0.0,
-    "steps": 249
+    "steps": 285
   },
   "seeds": [
     {
       "seed": 42,
-      "best_step": 10000,
-      "val_final_value": 101427.49998709497,
-      "val_total_return_pct": 1.4274999870949712,
-      "val_sharpe": 0.1800366631072828,
-      "val_max_drawdown_pct": -11.851321864367314,
-      "val_avg_turnover": 0.009737354220380579,
-      "val_steps": 249
+      "best_step": 130000,
+      "val_final_value": 150943.59617569705,
+      "val_total_return_pct": 50.94359617569706,
+      "val_sharpe": 1.565710768682281,
+      "val_max_drawdown_pct": -13.72097926536785,
+      "val_avg_turnover": 0.13317909857976262,
+      "val_steps": 285
     },
     {
       "seed": 43,
-      "best_step": 120000,
-      "val_final_value": 111095.43490225932,
-      "val_total_return_pct": 11.095434902259328,
-      "val_sharpe": 0.827373393994676,
-      "val_max_drawdown_pct": -7.355890513491259,
-      "val_avg_turnover": 0.060060125698545935,
-      "val_steps": 249
+      "best_step": 50000,
+      "val_final_value": 189209.3792045299,
+      "val_total_return_pct": 89.2093792045299,
+      "val_sharpe": 1.9476081856038163,
+      "val_max_drawdown_pct": -14.31378170401576,
+      "val_avg_turnover": 0.09739636792411499,
+      "val_steps": 285
     },
     {
       "seed": 44,
-      "best_step": 20000,
-      "val_final_value": 100469.1731535073,
-      "val_total_return_pct": 0.46917315350729627,
-      "val_sharpe": 0.09919569462527104,
-      "val_max_drawdown_pct": -12.436061481025574,
-      "val_avg_turnover": 0.029876696516231132,
-      "val_steps": 249
+      "best_step": 160000,
+      "val_final_value": 247582.0871205751,
+      "val_total_return_pct": 147.58208712057512,
+      "val_sharpe": 2.711457859187963,
+      "val_max_drawdown_pct": -15.810857061530681,
+      "val_avg_turnover": 0.11362005321251555,
+      "val_steps": 285
     }
   ],
   "env_params": {
     "window_size": 10,
     "commission_rate": 0.001,
-    "action_scale": 1.2,
+    "action_scale": 5.0,
     "cash_daily_return": 0.0,
-    "turnover_penalty": 0.25,
-    "rebalance_threshold": 0.1,
+    "turnover_penalty": 0.01,
+    "rebalance_threshold": 0.05,
     "rebalance_freq": 5
   }
 }

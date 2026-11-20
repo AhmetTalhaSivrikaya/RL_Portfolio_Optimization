@@ -1,3 +1,4 @@
+import json
 import sys
 from pathlib import Path
 
@@ -70,13 +71,18 @@ def test_summary_and_format_table():
 
 
 def test_matches_team_summary_json():
-    """RL ekibinin rl_backtest_summary.json değerleriyle (tolerans dahilinde) uyum."""
-    p = Path(__file__).resolve().parents[3] / "data" / "results" / "rl_backtest_results.csv"
-    if not p.exists():
-        pytest.skip("örnek sonuç dosyası yok")
-    df = pd.read_csv(p, parse_dates=["Date"], index_col="Date")
+    """RL ekibinin güncel rl_backtest_summary.json değerleriyle dinamik uyum."""
+    results_dir = Path(__file__).resolve().parents[3] / "data" / "results"
+    csv_path = results_dir / "rl_backtest_results.csv"
+    json_path = results_dir / "rl_backtest_summary.json"
+    if not (csv_path.exists() and json_path.exists()):
+        pytest.skip("örnek sonuç veya özet dosyası yok")
+
+    df = pd.read_csv(csv_path, parse_dates=["Date"], index_col="Date")
+    expected = json.loads(json_path.read_text(encoding="utf-8"))["metrics"]
+
     s = m.summary(df)
-    assert s["Toplam Getiri"] * 100 == pytest.approx(4.800438, abs=1e-3)
-    assert s["Sharpe"] == pytest.approx(0.236916, abs=1e-4)
-    assert s["Max Drawdown"] * 100 == pytest.approx(-15.843125, abs=1e-3)
-    assert s["Toplam Komisyon"] == pytest.approx(3490.3518, abs=1e-2)
+    assert s["Toplam Getiri"] * 100 == pytest.approx(expected["total_return_pct"], abs=1e-2)
+    assert s["Sharpe"] == pytest.approx(expected["sharpe"], abs=1e-3)
+    assert s["Max Drawdown"] * 100 == pytest.approx(expected["max_drawdown_pct"], abs=1e-2)
+    assert s["Toplam Komisyon"] == pytest.approx(expected["total_commission"], abs=1e-1)

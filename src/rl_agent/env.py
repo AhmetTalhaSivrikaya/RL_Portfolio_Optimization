@@ -25,7 +25,6 @@ class PortfolioEnv(gym.Env):
         rebalance_threshold: float = 0.05,
         rebalance_freq: int = 1,
         turnover_penalty: float = 0.01,
-        risk_aversion: float = 0.1,
         action_scale: float = 5.0,
         cash_daily_return: float = 0.0,
         random_start: bool = False,
@@ -57,7 +56,6 @@ class PortfolioEnv(gym.Env):
         self.rebalance_freq = max(1, int(rebalance_freq))
         self.turnover_penalty = float(turnover_penalty)
 
-        self.risk_aversion = float(risk_aversion)
         self.action_scale = float(action_scale)
 
         self.cash_daily_return = float(cash_daily_return)

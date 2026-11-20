@@ -24,7 +24,6 @@ def analyze_agent_behavior(results_path: str = "data/results/rl_backtest_results
     print(stats.to_string())
 
     # 2. Çeşitlendirme Skoru (Efektif Varlık Sayısı = 1 / sum(w^2))
-    # Tamamen tek hisseye kilitlenirse = 1.0, 6 varlığa eşit dağılırsa = 6.0 çıkar
     hhi_per_day = (weights_df ** 2).sum(axis=1)
     effective_assets = (1.0 / hhi_per_day).mean()
     num_total_assets = len(weight_cols)
@@ -37,23 +36,29 @@ def analyze_agent_behavior(results_path: str = "data/results/rl_backtest_results
     else:
         print("   ✅ BAŞARILI: Ajan dinamik ve sağlıklı bir portföy çeşitlendirmesi yapıyor.")
 
-    # 3. Günlük Ortalama Turnover (İşlem Sıklığı ve Hacmi)
-    daily_turnover = weights_df.diff().abs().sum(axis=1).dropna()
+    # 3. Gerçek İşlem Sıklığı (Turnover) ve Komisyon Analizi
+    if "Turnover" in df.columns:
+        daily_turnover = df["Turnover"]
+    else:
+        daily_turnover = 0.5 * weights_df.diff().abs().sum(axis=1).dropna()
+
     avg_turnover = daily_turnover.mean() * 100
-    active_rebalance_days = (daily_turnover > 0.05).mean() * 100  # %5 üzeri değişim olan günler
+    active_rebalance_days = (daily_turnover > 0.0).mean() * 100
 
     print(f"\n3️⃣ İşlem Sıklığı (Turnover) Analizi:")
-    print(f"   - Günlük Ortalama Portföy Değişimi (Turnover): %{avg_turnover:.2f}")
-    print(f"   - Aktif Yeniden Dengeleme Yapılan Gün Oranı  : %{active_rebalance_days:.1f}")
+    print(f"   - Günlük Ortalama Gerçek Turnover : %{avg_turnover:.2f}")
+    print(f"   - Aktif Yeniden Dengeleme Yapılan Gün Oranı : %{active_rebalance_days:.1f}")
+    if "Commission" in df.columns:
+        print(f"   - Toplam Ödenen Komisyon          : {df['Commission'].sum():,.2f} TL")
 
-    if avg_turnover > 60:
-        print("   ⚠️ UYARI: Ajan aşırı sık al-sat yapıyor (komisyon maliyeti yüksek). Ödül fonksiyonundaki komisyon cezasını artırın.")
-    elif avg_turnover < 1:
-        print("   ⚠️ UYARI: Ajan hiç işlem yapmıyor (donmuş politika). Öğrenme oranını (learning_rate) gözden geçirin.")
+    if avg_turnover > 30:
+        print("   ⚠️ UYARI: Ajan aşırı sık al-sat yapıyor (komisyon maliyeti yüksek).")
+    elif avg_turnover < 0.2:
+        print("   ⚠️ UYARI: Ajan neredeyse hiç işlem yapmıyor (donmuş politika).")
     else:
         print("   ✅ BAŞARILI: İşlem sıklığı komisyon maliyetleriyle dengeli.")
 
-    # 4. Ağırlıkların Zaman İçindeki Değişimi (İlk 5 ve Son 5 Gün)
+    # 4. Ağırlıkların Zaman İçindeki Değişimi (İlk 3 ve Son 3 Gün)
     print("\n4️⃣ İlk 3 Gün vs Son 3 Gün Portföy Dağılımı:")
     preview = pd.concat([df[["Date"] + weight_cols].head(3), df[["Date"] + weight_cols].tail(3)])
     print(preview.to_string(index=False))

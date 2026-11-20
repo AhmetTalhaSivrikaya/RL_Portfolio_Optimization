@@ -188,7 +188,6 @@ def deterministic_env():
         commission_rate=0.001,
         window_size=2,
         rebalance_threshold=0.0,
-        risk_aversion=0.0,
         turnover_penalty=0.0,
         drawdown_penalty_coef=0.0
     )
