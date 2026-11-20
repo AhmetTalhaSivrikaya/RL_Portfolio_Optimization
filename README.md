@@ -1,59 +1,174 @@
-# 📈 Pekiştirmeli Öğrenme (RL) Tabanlı Dinamik Portföy Optimizasyonu
+📈 Pekiştirmeli Öğrenme ile BIST30 Portföy Optimizasyonu
 
-Bu proje; finansal piyasalardaki hisse senetlerinin tarihsel fiyat hareketlerini ve teknik indikatörleri analiz ederek sermaye dağılımını dinamik olarak optimize eden, risk-getiri dengesini (Sharpe Oranı) maksimize etmeyi hedefleyen **Derin Pekiştirmeli Öğrenme (Reinforcement Learning)** tabanlı bir yapay zeka ajanıdır.
+Bu proje, Borsa İstanbul'da (BIST30) işlem gören yüksek likiditeli 5 hisse senedi ve nakit (CASH) varlığı arasında dinamik sermaye dağılımı yapan Derin Pekiştirmeli Öğrenme (PPO - Proximal Policy Optimization) tabanlı bir algoritmik portföy yönetim sistemidir.
 
----
+Geliştirilen ajan, geçmiş fiyat hareketlerini, teknik göstergeleri ve makro piyasa rejimini (XU100) analiz ederek işlem maliyetleri (komisyon ve turnover) altında risk-ayarlı getiriyi maksimize etmeyi öğrenir ve klasik Markowitz (Mean-Variance) ile Buy & Hold stratejileriyle kıyaslanır.
 
-## 📂 Proje Klasör Mimarisi
+🎯 Temel Özellikler
 
-```text
-rl-portfolio-optimization/
+Gerçekçi BIST30 Varlık Evreni: THYAO.IS, GARAN.IS, ASELS.IS, KCHOL.IS, BIMAS.IS hisseleri + güvenli liman olarak CASH (nakit) varlığı.
+
+Piyasa Rejimi Farkındalığı (MKT_xu100): BIST100 endeksinin günlük getirisi, 20 günlük volatilitesi ve 50 günlük hareketli ortalamaya göre konumu (rejim göstergesi) doğrudan ajanın gözlem uzayına dahil edilir.
+
+Sızıntısız (Leakage-Free) Ön İşleme: Eğitim (%70), doğrulama (%15) ve test (%15) setleri kronolojik olarak ayrılır; ölçeklendirme (StandardScaler) istatistikleri yalnızca eğitim verisi üzerinde hesaplanır.
+
+Gerçekçi İşlem Maliyeti ve Rebalans Kısıtları:
+
+Binde 1 (0.001) komisyon oranı ve tek yönlü turnover ($0.5 \times \sum \vert{}w_t - w_{t-1}\vert{}$) hesabı.
+
+Gereksiz işlem maliyetini önlemek için rebalance_freq=5 (haftalık periyot) ve rebalance_threshold=0.05 eşik değeri.
+
+Çoklu Seed (Multi-Seed) Eğitim ve Seçim: 42, 43 ve 44 seed değerleriyle eğitilen modeller arasından validation Sharpe oranına göre en iyi model (Seed 44) otomatik seçilir.
+
+Etkileşimli Analiz Paneli: Streamlit ve Plotly tabanlı dashboard ile kümülatif getiri, drawdown, rolling Sharpe, portföy ağırlık değişimleri ve işlem maliyetleri interaktif olarak incelenir.
+
+🏗️ Proje Mimarisi
+
+RL_Portfolio_Optimization/
+├── config.py                        # Merkezi varlık listesi, tarih aralıkları ve yol ayarları
+├── requirements.txt                 # Proje bağımlılıkları
 ├── data/
-│   ├── raw/            # Ham piyasa verileri (Git'e yüklenmez)
-│   └── processed/      # Temizlenmiş ve indikatör eklenmiş veri setleri
-├── src/
-│   ├── data_loader/    # [1. Kişi] Veri çekme & teknik indikatör mühendisliği
-│   ├── rl_agent/       # [2. Kişi] Gymnasium borsa ortamı & PPO/SAC modeli
-│   ├── baseline/       # [3. Kişi] Markowitz Portföy Teorisi & Buy-and-Hold kıyaslaması
-│   └── metrics_ui/     # [4. Kişi] Finansal risk metrikleri & Streamlit arayüzü
-├── notebooks/          # Deneysel analizler ve test defterleri
-└── requirements.txt    # Ortak Python bağımlılıkları
+│   ├── raw/                         # Ham piyasa ve BIST100 verileri (gitignore)
+│   ├── processed/                   # Ölçeklenmiş ve bölünmüş train/val/test setleri
+│   └── results/                     # RL, Markowitz ve Buy&Hold backtest çıktıları (CSV & JSON)
+├── models/
+│   └── ppo_portfolio/               # Eğitilmiş PPO modelleri (seed_42, seed_43, seed_44, best)
+└── src/
+    ├── data_pipeline/
+    │   └── fetch_data.py            # Yahoo Finance veri çekme, özellik mühendisliği ve ölçekleme
+    ├── baseline/
+    │   └── portfolio_baselines.py   # Markowitz (PyPortfolioOpt) ve Buy & Hold referans modelleri
+    ├── rl_agent/
+    │   ├── env.py                   # Gymnasium uyumlu özel PortfolioEnv ortamı
+    │   ├── train.py                 # Çoklu seed PPO eğitim ve validation seçim betiği
+    │   ├── evaluate.py              # Test seti backtest ve metrik raporlama betiği
+    │   ├── market_data_validator.py # Veri ve sonuç sözleşmesi doğrulayıcı
+    │   └── test_env.py              # Ortam finansal hesaplama birim testleri
+    └── metrics_ui/
+        ├── metrics.py               # Sharpe, Sortino, Calmar, VaR/CVaR hesaplama modülü
+        ├── app.py                   # Streamlit performans ve karşılaştırma paneli
+        └── tests/
+            └── test_metrics.py      # Finansal metrik birim testleri
 
 
+📊 Deneysel Sonuçlar
+
+1. Validation Seti Çoklu Seed Eğitim Özeti (Seed 42, 43, 44)
+
+Ortalama Validation Sharpe: 2.07 ± 0.58
+
+En İyi Model (Seed 44): Validation döneminde %147.58 getiri ve 2.71 Sharpe oranına ulaşarak Buy & Hold referansını (%56.34 getiri, 1.57 Sharpe) geride bırakmıştır.
+
+2. Test Seti Strateji Karşılaştırması (Ortak Değerlendirme Dönemi)
+
+Metrik
+
+Buy & Hold
+
+Markowitz (Max Sharpe)
+
+PPO RL Ajanı (Seed 44)
+
+Toplam Getiri (Net)
+
+%59.76
+
+%8.30
+
+%35.11
+
+Yıllık Getiri
+
+%51.11
+
+%7.28
+
+%30.36
+
+Sharpe Oranı
+
+1.312
+
+0.045
+
+0.735
+
+Sortino Oranı
+
+1.971
+
+0.064
+
+1.042
+
+Calmar Oranı
+
+3.141
+
+0.370
+
+1.181
+
+Kazanan Gün Oranı
+
+%55.24
+
+%50.70
+
+%53.15
+
+Toplam Komisyon
+
+-
+
+-
+
+4,120 TL (56 rebalans)
+
+Önemli Bulgu: Klasik Markowitz optimizasyonu geçmiş örneklem kovaryansına aşırı duyarlı olduğu için yalnızca 3 hisseye yoğunlaşmış ve test döneminde düşük performans göstermiştir. PPO ajanı ise piyasa rejimine göre hisse ve nakit (CASH) ağırlıklarını dinamik olarak kaydırarak klasik optimizasyon yöntemini açık ara geride bırakmıştır.
+
+🚀 Kurulum ve Çalıştırma
+
+1. Ortam Kurulumu
+
+git clone https://github.com/suleyman7361/RL_Portfolio_Optimization.git
+cd RL_Portfolio_Optimization
+python -m pip install -r requirements.txt
 
 
-Kurulum Adımları : 
-# 1. Repoyu bilgisayarınıza klonlayın
-git clone [https://github.com/PROJE_SAHIBI/rl-portfolio-optimization.git](https://github.com/PROJE_SAHIBI/rl-portfolio-optimization.git)
-cd rl-portfolio-optimization
+2. Uçtan Uca Çalıştırma Adımları
 
-# 2. Sanal ortam (venv) oluşturun ve aktif edin
-python3 -m venv venv
-source venv/bin/activate       # Linux / macOS / WSL
-# venv\Scripts\activate        # Windows PowerShell
+# 1. Veriyi çek ve train/val/test olarak hazırla
+python src/data_pipeline/fetch_data.py
 
-# 3. Gerekli kütüphaneleri yükleyin
-pip install -r requirements.txt
+# 2. Klasik baseline stratejilerini (Markowitz & Buy&Hold) çalıştır
+python -m src.baseline.portfolio_baselines
 
-# 4. Kendi sorumlu olduğunuz çalışma dalına (branch) geçin
-git checkout feature/DAL_ADINIZ
+# 3. PPO ajanını çoklu seed (42, 43, 44) ile eğit
+python src/rl_agent/train.py
 
+# 4. En iyi modeli test setinde değerlendir ve sonuçları kaydet
+python src/rl_agent/evaluate.py --split test
 
-
+# 5. Tüm veri ve sonuç dosyalarının sözleşme uyumluluğunu doğrula
+python src/rl_agent/market_data_validator.py
 
 
-Ekip Çalışma Kuralları ve Önemli Uyarılar
-Kod çakışmalarını (merge conflict) ve veri hatalarını önlemek için tüm ekip üyelerinin aşağıdaki kurallara uyması zorunludur:
+3. Testleri Çalıştırma ve Streamlit Panelini Açma
 
-🚫 main Dalına Doğrudan Push Yasaktır: Hiçbir ekip üyesi doğrudan main dalına kod göndermemelidir. Herkes yalnızca kendi sorumlu olduğu feature/... dalında ve kendi modül klasöründe çalışmalıdır.
+# Birim testleri çalıştır (22 test)
+pytest -v
 
-🔀 Pull Request (PR) Zorunluluğu: Bir modül veya özellik tamamlandığında GitHub üzerinden main dalına Pull Request açılmalı ve en az 1 ekip arkadaşının onayı alındıktan sonra birleştirilmelidir.
+# Etkileşimli performans panelini başlat
+python -m streamlit run src/metrics_ui/app.py
 
-🔄 Güne Başlarken Güncelleme: Kod yazmaya başlamadan önce mutlaka ana daldaki güncel değişiklikleri kendi dalınıza çekin:
-     git pull origin main
 
-📊 Kronolojik Veri Ayrımı (Data Leakage Önlemi): Finansal zaman serilerinde kesinlikle rastgele veri bölme (train_test_split) yapılmamalıdır. Eğitim ve test verileri kronolojik olarak ayrılmalıdır (Örn: 2018–2023 Eğitim, 2024–2025 Backtest).
+🛠️ Kullanılan Teknolojiler
 
-💸 İşlem Maliyeti (Komisyon) Standartı: Gerçekçi simülasyon sonuçları için hem RL ortamında hem de Markowitz baseline modelinde her alım-satım işlemi için %0.1 (binde 1) komisyon kesintisi standart olarak uygulanmalıdır.
+Pekiştirmeli Öğrenme: Gymnasium, Stable-Baselines3 (PPO)
 
-💾 Büyük Veri Dosyaları: data/raw/ klasöründeki ham ve büyük boyutlu CSV dosyalarını GitHub'a yüklemeyin; yalnızca işlenmiş ve standartlaştırılmış veri setlerini paylaşın.
+Finansal Optimizasyon & Analiz: PyPortfolioOpt, ta (Technical Analysis), yfinance
+
+Veri İşleme & Test: NumPy, Pandas, SciPy, Pytest
+
+Görselleştirme & Arayüz: Streamlit, Plotly, Matplotlib
