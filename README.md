@@ -1,174 +1,78 @@
-📈 Pekiştirmeli Öğrenme ile BIST30 Portföy Optimizasyonu
+# 📈 Pekiştirmeli Öğrenme (RL) Tabanlı Dinamik Portföy Optimizasyonu
 
-Bu proje, Borsa İstanbul'da (BIST30) işlem gören yüksek likiditeli 5 hisse senedi ve nakit (CASH) varlığı arasında dinamik sermaye dağılımı yapan Derin Pekiştirmeli Öğrenme (PPO - Proximal Policy Optimization) tabanlı bir algoritmik portföy yönetim sistemidir.
+Borsa İstanbul (BIST) hisse senetlerinin tarihsel fiyat hareketlerini, teknik indikatörlerini ve piyasa endeksi (`XU100`) dinamiklerini analiz ederek sermaye dağılımını dinamik olarak optimize eden **Derin Pekiştirmeli Öğrenme (Proximal Policy Optimization - PPO)** tabanlı portföy yönetim sistemi.
 
-Geliştirilen ajan, geçmiş fiyat hareketlerini, teknik göstergeleri ve makro piyasa rejimini (XU100) analiz ederek işlem maliyetleri (komisyon ve turnover) altında risk-ayarlı getiriyi maksimize etmeyi öğrenir ve klasik Markowitz (Mean-Variance) ile Buy & Hold stratejileriyle kıyaslanır.
+Proje; **özel Gymnasium borsa simülasyon ortamı**, **çoklu seed ile eğitilmiş PPO ajanı**, **klasik finansal referans modelleri (Markowitz Ortalama-Varyans Optimizasyonu ve Buy & Hold)** ve **etkileşimli Streamlit performans analizi panelinden** oluşur.
 
-🎯 Temel Özellikler
+---
 
-Gerçekçi BIST30 Varlık Evreni: THYAO.IS, GARAN.IS, ASELS.IS, KCHOL.IS, BIMAS.IS hisseleri + güvenli liman olarak CASH (nakit) varlığı.
+## 🎯 Temel Özellikler ve Metodoloji
 
-Piyasa Rejimi Farkındalığı (MKT_xu100): BIST100 endeksinin günlük getirisi, 20 günlük volatilitesi ve 50 günlük hareketli ortalamaya göre konumu (rejim göstergesi) doğrudan ajanın gözlem uzayına dahil edilir.
+* **Varlık Evreni ve Piyasa Bağlamı:** BIST30'un farklı sektörlerini temsil eden 5 hisse senedi (`THYAO.IS`, `GARAN.IS`, `ASELS.IS`, `KCHOL.IS`, `BIMAS.IS`), nakit pozisyonu (`W_CASH`) ve piyasa rejimi göstergesi (`MKT_xu100`) üzerinde çalışır.
+* **Sızıntısız (Leak-Free) Kronolojik Veri Ayrımı:** Zaman serisi bütünlüğünü korumak için rastgele bölme yerine kronolojik ayrım uygulanır (`2018–2023` Eğitim & Doğrulama, `2024–2025` Out-of-Sample Test). Özellik ölçeklendirme (`StandardScaler`) yalnızca eğitim setine fit edilir.
+* **Gerçekçi İşlem Maliyeti ve Rebalans Kısıtları:** Hem RL ortamında hem de referans modellerde tek yönlü turnover üzerinden **%0.1 (binde 1)** komisyon uygulanır. Ajan, gereksiz işlem maliyetini önlemek amacıyla periyodik yeniden dengeleme (`rebalance_freq = 5` işlem günü) ve minimum değişim eşiği (`rebalance_threshold = 0.05`) ile çalışır.
+* **Risk-Duyarlı Ödül Fonksiyonu:** Logaritmik net portföy getirisine ek olarak turnover maliyeti ve zirveden düşüş (drawdown) cezalarını içeren ödül yapısı kullanılır.
+* **Çoklu Seed Eğitim ve Doğrulama:** Rastgele başlangıç etkisini azaltmak için modeller 3 farklı seed (`42, 43, 44`) ile eğitilir; en yüksek validation Sharpe oranına sahip kontrol noktası (`best_seed = 44`) test değerlendirmesi için otomatik seçilir.
 
-Sızıntısız (Leakage-Free) Ön İşleme: Eğitim (%70), doğrulama (%15) ve test (%15) setleri kronolojik olarak ayrılır; ölçeklendirme (StandardScaler) istatistikleri yalnızca eğitim verisi üzerinde hesaplanır.
+---
 
-Gerçekçi İşlem Maliyeti ve Rebalans Kısıtları:
+## 📊 Test Dönemi Performans Karşılaştırması (`2024-01-16` → `2025-12-31`)
 
-Binde 1 (0.001) komisyon oranı ve tek yönlü turnover ($0.5 \times \sum \vert{}w_t - w_{t-1}\vert{}$) hesabı.
+Başlangıç sermayesi **100.000 TL**, komisyon oranı **%0.1** ve yıllık risksiz getiri oranı **%0** kabul edilerek elde edilen test sonuçları:
 
-Gereksiz işlem maliyetini önlemek için rebalance_freq=5 (haftalık periyot) ve rebalance_threshold=0.05 eşik değeri.
+| Metrik | Buy & Hold (Eşit Ağırlık) | Markowitz (Max Sharpe) | PPO RL Ajanı (Seed 44) |
+| :--- | :---: | :---: | :---: |
+| **Son Portföy Değeri** | 159.760 TL | 108.298 TL | **135.107 TL** |
+| **Toplam Net Getiri** | %59.76 | %8.30 | **%35.11** |
+| **Yıllıklandırılmış Getiri** | %51.11 | %7.28 | **%30.36** |
+| **Yıllık Volatilite** | %26.56 | %29.25 | **%27.74** |
+| **Sharpe Oranı** | 1.312 | 0.045 | **0.735** |
+| **Sortino Oranı** | 1.971 | 0.064 | **1.042** |
+| **Max Drawdown** | -%16.27 | -%19.67 | **-%25.71** |
+| **Calmar Oranı** | 3.141 | 0.370 | **1.181** |
+| **Günlük VaR (%95)** | -%2.02 | -%2.31 | **-%2.56** |
+| **Günlük CVaR (%95)** | -%3.27 | -%3.87 | **-%4.04** |
+| **Toplam Rebalans / Komisyon** | Tek seferlik alım | Periyodik | **56 işlem / 4.120 TL** |
 
-Çoklu Seed (Multi-Seed) Eğitim ve Seçim: 42, 43 ve 44 seed değerleriyle eğitilen modeller arasından validation Sharpe oranına göre en iyi model (Seed 44) otomatik seçilir.
-
-Etkileşimli Analiz Paneli: Streamlit ve Plotly tabanlı dashboard ile kümülatif getiri, drawdown, rolling Sharpe, portföy ağırlık değişimleri ve işlem maliyetleri interaktif olarak incelenir.
-
-🏗️ Proje Mimarisi
-
-RL_Portfolio_Optimization/
-├── config.py                        # Merkezi varlık listesi, tarih aralıkları ve yol ayarları
-├── requirements.txt                 # Proje bağımlılıkları
-├── data/
-│   ├── raw/                         # Ham piyasa ve BIST100 verileri (gitignore)
-│   ├── processed/                   # Ölçeklenmiş ve bölünmüş train/val/test setleri
-│   └── results/                     # RL, Markowitz ve Buy&Hold backtest çıktıları (CSV & JSON)
-├── models/
-│   └── ppo_portfolio/               # Eğitilmiş PPO modelleri (seed_42, seed_43, seed_44, best)
-└── src/
-    ├── data_pipeline/
-    │   └── fetch_data.py            # Yahoo Finance veri çekme, özellik mühendisliği ve ölçekleme
-    ├── baseline/
-    │   └── portfolio_baselines.py   # Markowitz (PyPortfolioOpt) ve Buy & Hold referans modelleri
-    ├── rl_agent/
-    │   ├── env.py                   # Gymnasium uyumlu özel PortfolioEnv ortamı
-    │   ├── train.py                 # Çoklu seed PPO eğitim ve validation seçim betiği
-    │   ├── evaluate.py              # Test seti backtest ve metrik raporlama betiği
-    │   ├── market_data_validator.py # Veri ve sonuç sözleşmesi doğrulayıcı
-    │   └── test_env.py              # Ortam finansal hesaplama birim testleri
-    └── metrics_ui/
-        ├── metrics.py               # Sharpe, Sortino, Calmar, VaR/CVaR hesaplama modülü
-        ├── app.py                   # Streamlit performans ve karşılaştırma paneli
-        └── tests/
-            └── test_metrics.py      # Finansal metrik birim testleri
+### Öne Çıkan Bulgular
+* **Klasik Optimizasyona Üstünlük:** PPO ajanı, geçmiş kovaryans matrisine aşırı uyum sağlayarak yalnızca 3 hisseye yoğunlaşan klasik Markowitz modelini toplam getiride (**%35.11 vs %8.30**) ve Sharpe oranında (**0.735 vs 0.045**) açık ara geride bırakmıştır.
+* **Dinamik Rejim Adaptasyonu:** Ağırlık dağılımı analizleri, ajanın düşüş dönemlerinde nakit (`CASH`) ağırlığını yükselterek savunmaya geçtiğini, yükseliş trendlerinde ise momentumu yüksek hisselere (`GARAN.IS`, `ASELS.IS`, `THYAO.IS`) dinamik olarak ağırlık kaydırdığını göstermektedir.
 
 
-📊 Deneysel Sonuçlar
-
-1. Validation Seti Çoklu Seed Eğitim Özeti (Seed 42, 43, 44)
-
-Ortalama Validation Sharpe: 2.07 ± 0.58
-
-En İyi Model (Seed 44): Validation döneminde %147.58 getiri ve 2.71 Sharpe oranına ulaşarak Buy & Hold referansını (%56.34 getiri, 1.57 Sharpe) geride bırakmıştır.
-
-2. Test Seti Strateji Karşılaştırması (Ortak Değerlendirme Dönemi)
-
-Metrik
-
-Buy & Hold
-
-Markowitz (Max Sharpe)
-
-PPO RL Ajanı (Seed 44)
-
-Toplam Getiri (Net)
-
-%59.76
-
-%8.30
-
-%35.11
-
-Yıllık Getiri
-
-%51.11
-
-%7.28
-
-%30.36
-
-Sharpe Oranı
-
-1.312
-
-0.045
-
-0.735
-
-Sortino Oranı
-
-1.971
-
-0.064
-
-1.042
-
-Calmar Oranı
-
-3.141
-
-0.370
-
-1.181
-
-Kazanan Gün Oranı
-
-%55.24
-
-%50.70
-
-%53.15
-
-Toplam Komisyon
-
--
-
--
-
-4,120 TL (56 rebalans)
-
-Önemli Bulgu: Klasik Markowitz optimizasyonu geçmiş örneklem kovaryansına aşırı duyarlı olduğu için yalnızca 3 hisseye yoğunlaşmış ve test döneminde düşük performans göstermiştir. PPO ajanı ise piyasa rejimine göre hisse ve nakit (CASH) ağırlıklarını dinamik olarak kaydırarak klasik optimizasyon yöntemini açık ara geride bırakmıştır.
-
-🚀 Kurulum ve Çalıştırma
-
-1. Ortam Kurulumu
-
-git clone https://github.com/suleyman7361/RL_Portfolio_Optimization.git
+## KURULUM VE ÇALIŞTIRMA
+### 1.KURULUM
+git clone [https://github.com/AhmetTalhaSivrikaya/RL_Portfolio_Optimization.git](https://github.com/AhmetTalhaSivrikaya/RL_Portfolio_Optimization.git)
 cd RL_Portfolio_Optimization
+
+python -m venv venv
+* Windows PowerShell:
+.\venv\Scripts\Activate.ps1
+ *Linux / macOS / WSL:
+ source venv/bin/activate
+
 python -m pip install -r requirements.txt
 
+### 2.UÇTAN UCA PIPELINE
 
-2. Uçtan Uca Çalıştırma Adımları
+ 1. Veri setini indir ve teknik indikatörleri üret
+python -m src.data_loader.data_pipeline
 
-# 1. Veriyi çek ve train/val/test olarak hazırla
-python src/data_pipeline/fetch_data.py
-
-# 2. Klasik baseline stratejilerini (Markowitz & Buy&Hold) çalıştır
-python -m src.baseline.portfolio_baselines
-
-# 3. PPO ajanını çoklu seed (42, 43, 44) ile eğit
+ 2. PPO ajanını çoklu seed (42, 43, 44) ile eğit ve en iyi modeli seç
 python src/rl_agent/train.py
 
-# 4. En iyi modeli test setinde değerlendir ve sonuçları kaydet
+ 3. En iyi RL modelini out-of-sample test setinde değerlendir
 python src/rl_agent/evaluate.py --split test
 
-# 5. Tüm veri ve sonuç dosyalarının sözleşme uyumluluğunu doğrula
+ 4. Markowitz ve Buy & Hold baseline sonuçlarını üret
+python -m src.baseline.portfolio_baselines
+
+ 5. Tüm çıktı dosyalarının sözleşme ve ağırlık tutarlılığını doğrula
 python src/rl_agent/market_data_validator.py
 
-
-3. Testleri Çalıştırma ve Streamlit Panelini Açma
-
-# Birim testleri çalıştır (22 test)
-pytest -v
-
-# Etkileşimli performans panelini başlat
+### 3.ETKİLEŞİMLİ PANELİ AÇMA
 python -m streamlit run src/metrics_ui/app.py
 
+### 4. TEST ÇALIŞTIRMA 
+pytest -v
 
-🛠️ Kullanılan Teknolojiler
-
-Pekiştirmeli Öğrenme: Gymnasium, Stable-Baselines3 (PPO)
-
-Finansal Optimizasyon & Analiz: PyPortfolioOpt, ta (Technical Analysis), yfinance
-
-Veri İşleme & Test: NumPy, Pandas, SciPy, Pytest
-
-Görselleştirme & Arayüz: Streamlit, Plotly, Matplotlib
+Bunu doğrudan kök dizindeki `README.md` dosyanın içine yapıştırıp kaydedebilir, ardından `git add README.md && git commit -m "Update README with final architecture and benchmark results" && git push origin main` komutuyla GitHub'a gönderebilirsin.
